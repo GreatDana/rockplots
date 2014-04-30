@@ -1,5 +1,26 @@
+###################################################################################
+# Script for finalizing GOA rockfish models
+# First section of code adapted from P. Hulson retrospective code used in 2011
+# 2014 revision by D. Hanselman
+# Generalized code to work directly from the .dat file for each rockfish
+# Requires a models.dat file to read .ctls in for sensitivity, and for base model ctl file
+# Runs retrospective models, will also run MCMC (set flag mcmcon<-"YES")
+# Makes copies of results files (and MCMC evalout when MCMC is on)
+# Runs sensitivity models for sensitivity graph
+# Plots retrospective plots
+# Plots some posterior and prior distribution plots for M and q
+###################################################################################
+
+################ Load up some libraries needed
+library(ggplot2)
+library(lattice)
+library(reshape2)
+library(MASS)
+library(emdbook)
+
+
 #============================================================================================
-#============= Get Working Directories
+#============= Set up directories
 #============================================================================================
 setwd("C:/SA/Retro")
 path<-getwd()
@@ -25,19 +46,23 @@ st_end[,1]<-Sec_st
 st_end[,2]<-Sec_end
 
 mcmcon<-"NO"
+mcmcruns<-50000  # Could change these, but I like 5000 as a manageable number to deal with
+mcmcsave<-mcmcruns/5000
+#============================================================================================
+#============= Set up some model dimensions
+#============================================================================================
+styr<-as.numeric(DAT[Sec_st[2]-3]) # start of model (example 1961 for POP)
+modelyear<-as.numeric(DAT[Sec_st[2]-1]) #current model year
+nages<-as.numeric(DAT[Sec_st[2]+3]) # number of age bins
+nlens<-as.numeric(DAT[Sec_st[2]+5]) # number of length bins
+numretros<-10 # number of retrospective years
 
 #============================================================================================
 #============= Run retrospective loop
 #============================================================================================
-styr<-as.numeric(DAT[Sec_st[2]-3])
-modelyear<-as.numeric(DAT[Sec_st[2]-1]) #current model year
-nages<-as.numeric(DAT[Sec_st[2]+3])
-nlens<-as.numeric(DAT[Sec_st[2]+5])
-numretros<-10 # number of retrospective years
-T_start<-Sys.time()
+T_start<-Sys.time() Timer start
 
 for(y in 1:(numretros+1)) {
-  #for(y in 1:2) {
 
 #============================================================================================
 #============= Concatenate DAT file
@@ -50,13 +75,9 @@ nyrs<-endyr-styr+1
 DAT_retro<-c(DAT[st_end[1,1]:st_end[1,2]],as.character(endyr),DAT[st_end[2,1]:st_end[2,2]])
 
 # Fishery catch
-#obs_c<-obs_catch$Catch[1:nyrs]
-#DAT_retro<-c(DAT_retro,paste(as.character(sapply(parse(DAT[Sec_st[3]-1]),eval)[nyrs-y]),collapse=" "),DAT[st_end[3,1]:st_end[3,2]])
 DAT_retro<-c(DAT_retro,paste(scan(text=DAT[Sec_st[3]-1])[1:nyrs],collapse=" "),DAT[st_end[3,1]:st_end[3,2]])
-#BTSb_yrs<-floor(seq(12+(0.5*(modelyear-2011)),(12-numretros/2)+(0.5*(modelyear-2011)),by=-0.5))
 # Trawl survey biomass
  BTSb_yrs<-length(which(scan(text=DAT[Sec_st[5]-1])<(endyr+1)))
- #BTSb_yrs<-c(12,11,11,10,10,9,9,8,8,7,7)
 DAT_retro<-c(
 DAT_retro,
 as.character(BTSb_yrs),
@@ -73,8 +94,6 @@ paste(scan(text=DAT[Sec_st[9]-1])[1:BTSb_yrs],collapse=" "),
 DAT[st_end[9,1]:st_end[9,2]])
 
 # Fish age comp
-#FAC_yrs<-floor(seq(11+(0.5*(modelyear-2011)),(11-numretros/2)+(0.5*(modelyear-2011)),by=-0.5)) # doesn't work on fish age comps
-#FAC_yrs<-c(11,11,10,10,9,9,8,7,7,6,5)
 FAC_yrs<-length(which(scan(text=DAT[Sec_st[11]-1])<(endyr)))
 DAT_retro<-c(DAT_retro,
 as.character(FAC_yrs),
@@ -92,77 +111,71 @@ for(i in 1:FAC_yrs)   DAT_retro<-c(DAT_retro,paste(scan(text=DAT[Sec_st[15]-FAC_
 DAT_retro<-c(DAT_retro,DAT[st_end[15,1]:st_end[15,2]])
 
 # Survey age comp
-#SAC_yrs<-floor(seq(10+0.5+(0.5*(modelyear-2011)),(10-numretros/2+0.5)+(0.5*(modelyear-2011)),by=-0.5))
-#SAC_yrs<-c(10,10,10,9,9,8,8,7,7,6,6)
  SAC_yrs<-length(which(scan(text=DAT[Sec_st[17]-1])<(endyr)))
-DAT_retro<-c(DAT_retro,
-             as.character(SAC_yrs),
-             DAT[st_end[16,1]:st_end[16,2]],
-             paste(scan(text=DAT[Sec_st[17]-1])[1:SAC_yrs],collapse=" "),
-             DAT[st_end[17,1]:st_end[17,2]], DAT[st_end[11,1]:st_end[11,2]],
-             paste(scan(text=DAT[Sec_st[18]-1])[1:SAC_yrs],collapse=" "),
-             DAT[st_end[18,1]:st_end[18,2]],
-             paste(scan(text=DAT[Sec_st[19]-1])[1:SAC_yrs],collapse=" "),
-             DAT[st_end[19,1]:st_end[19,2]],
-             paste(scan(text=DAT[Sec_st[20]-1])[1:SAC_yrs],collapse=" "),
-             DAT[st_end[20,1]:st_end[20,2]])
-             for(i in 1:SAC_yrs)   DAT_retro<-c(DAT_retro,paste(scan(text=DAT[Sec_st[21]-SAC_yrs-1+i]) ,collapse = " "))
+ DAT_retro<-c(DAT_retro,
+  as.character(SAC_yrs),
+  DAT[st_end[16,1]:st_end[16,2]],
+  paste(scan(text=DAT[Sec_st[17]-1])[1:SAC_yrs],collapse=" "),
+  DAT[st_end[17,1]:st_end[17,2]], DAT[st_end[11,1]:st_end[11,2]],
+  paste(scan(text=DAT[Sec_st[18]-1])[1:SAC_yrs],collapse=" "),
+  DAT[st_end[18,1]:st_end[18,2]],
+  paste(scan(text=DAT[Sec_st[19]-1])[1:SAC_yrs],collapse=" "),
+  DAT[st_end[19,1]:st_end[19,2]],
+  paste(scan(text=DAT[Sec_st[20]-1])[1:SAC_yrs],collapse=" "),
+  DAT[st_end[20,1]:st_end[20,2]])
+  for(i in 1:SAC_yrs)   DAT_retro<-c(DAT_retro,paste(scan(text=DAT[Sec_st[21]-SAC_yrs-1+i]) ,collapse = " "))
 
-DAT_retro<-c(DAT_retro,DAT[st_end[21,1]:st_end[21,2]])
+ DAT_retro<-c(DAT_retro,DAT[st_end[21,1]:st_end[21,2]])
 
 
 # Fish size comp
-#FSC_yrs<-c(20,20,20,20,20,20,20,20,20,20,20)
  FSC_yrs<-length(which(scan(text=DAT[Sec_st[23]-1])<(endyr)))
  
-DAT_retro<-c(DAT_retro,
-             as.character(FSC_yrs),
-             DAT[st_end[22,1]:st_end[22,2]],
-             paste(scan(text=DAT[Sec_st[23]-1])[1:FSC_yrs],collapse=" "),
-             DAT[st_end[23,1]:st_end[23,2]],
-             paste(scan(text=DAT[Sec_st[24]-1])[1:FSC_yrs],collapse=" "),
-             DAT[st_end[24,1]:st_end[24,2]],
-             paste(scan(text=DAT[Sec_st[25]-1])[1:FSC_yrs],collapse=" "),
-             DAT[st_end[25,1]:st_end[25,2]],
-             paste(scan(text=DAT[Sec_st[26]-1])[1:FSC_yrs],collapse=" "),
-             DAT[st_end[26,1]:st_end[26,2]])
-            for(i in 1:FSC_yrs)   DAT_retro<-c(DAT_retro,paste(scan(text=DAT[Sec_st[27]-FSC_yrs-1+i]) ,collapse = " "))
+ DAT_retro<-c(DAT_retro,
+  as.character(FSC_yrs),
+  DAT[st_end[22,1]:st_end[22,2]],
+  paste(scan(text=DAT[Sec_st[23]-1])[1:FSC_yrs],collapse=" "),
+  DAT[st_end[23,1]:st_end[23,2]],
+  paste(scan(text=DAT[Sec_st[24]-1])[1:FSC_yrs],collapse=" "),
+  DAT[st_end[24,1]:st_end[24,2]],
+  paste(scan(text=DAT[Sec_st[25]-1])[1:FSC_yrs],collapse=" "),
+  DAT[st_end[25,1]:st_end[25,2]],
+  paste(scan(text=DAT[Sec_st[26]-1])[1:FSC_yrs],collapse=" "),
+  DAT[st_end[26,1]:st_end[26,2]])
+  for(i in 1:FSC_yrs)   DAT_retro<-c(DAT_retro,paste(scan(text=DAT[Sec_st[27]-FSC_yrs-1+i]) ,collapse = " "))
 
 DAT_retro<-c(DAT_retro,DAT[st_end[27,1]:st_end[27,2]])
 
 # Survey size comp
-#SSC_yrs<-floor(seq(12+(0.5*(modelyear-2011)),(12-numretros/2)+(0.5*(modelyear-2011)),by=-0.5))
  SSC_yrs<-length(which(scan(text=DAT[Sec_st[29]-1])<(endyr+1)))
- #SSC_yrs<-c(12,11,11,10,10,9,9,8,8,7,7)
 
 DAT_retro<-c(DAT_retro,
-             as.character(SSC_yrs),
-             DAT[st_end[28,1]:st_end[28,2]],
-             paste(scan(text=DAT[Sec_st[29]-1])[1:SSC_yrs],collapse=" "),
-             DAT[st_end[29,1]:st_end[29,2]],
-             paste(scan(text=DAT[Sec_st[30]-1])[1:SSC_yrs],collapse=" "),
-             DAT[st_end[30,1]:st_end[30,2]],
-             paste(scan(text=DAT[Sec_st[31]-1])[1:SSC_yrs],collapse=" "),
-             DAT[st_end[31,1]:st_end[31,2]],
-             paste(scan(text=DAT[Sec_st[32]-1])[1:SSC_yrs],collapse=" "),
-             DAT[st_end[32,1]:st_end[32,2]])
-for(i in 1:SSC_yrs)   DAT_retro<-c(DAT_retro,paste(scan(text=DAT[Sec_st[33]-SSC_yrs-1+i]) ,collapse = " "))
+ as.character(SSC_yrs),
+ DAT[st_end[28,1]:st_end[28,2]],
+ paste(scan(text=DAT[Sec_st[29]-1])[1:SSC_yrs],collapse=" "),
+ DAT[st_end[29,1]:st_end[29,2]],
+ paste(scan(text=DAT[Sec_st[30]-1])[1:SSC_yrs],collapse=" "),
+ DAT[st_end[30,1]:st_end[30,2]],
+ paste(scan(text=DAT[Sec_st[31]-1])[1:SSC_yrs],collapse=" "),
+ DAT[st_end[31,1]:st_end[31,2]],
+ paste(scan(text=DAT[Sec_st[32]-1])[1:SSC_yrs],collapse=" "),
+ DAT[st_end[32,1]:st_end[32,2]])
+ for(i in 1:SSC_yrs)   DAT_retro<-c(DAT_retro,paste(scan(text=DAT[Sec_st[33]-SSC_yrs-1+i]) ,collapse = " "))
 
 DAT_retro<-c(DAT_retro,DAT[st_end[33,1]:st_end[33,2]])
 
-
-
 # Write data file
-write.table(DAT_retro,file=paste(pathM,"/goa_pop_2011.dat",sep=""),,quote=F,,,,,row.names=F,col.names=F)
+write.table(DAT_retro,file=paste(pathM,"/goa_pop_2011.dat",sep=""),quote=F,row.names=F,col.names=F)
 
 
 #============================================================================================
 #============= Run model
 #============================================================================================
 
+## set your number of MCMC runs at the top of the program... 
 setwd(pathM)
-if(mcmcon=="YES") shell(paste('"tem.EXE"',' -mcmc 50000 -mcsave 10')) else
-   shell("tem.EXE")
+if(mcmcon=="YES") shell(paste('tem.EXE',' -mcmc ',mcmcruns,'-mcsave ',mcmcsave)) else
+   shell(paste('tem.exe ','-nox'))
    
 
 
@@ -181,27 +194,31 @@ file.copy(from=paste(pathM,"/report.rep",sep=""),to=paste(pathR,"/rep_",modelyea
 file.copy(from=paste(pathM,"/tem.par",sep=""),to=paste(pathR,"/par_",modelyear-(y-1),".par",sep=""),overwrite=T)
 file.copy(from=paste(pathM,"/proj.dat",sep=""),to=paste(pathR,"/prj_",modelyear-(y-1),".prj",sep=""),overwrite=T)
 
-#STD<-read.delim(paste(pathM,"/tem.STD",sep=""),sep="")
-#write.table(STD,file=paste(pathR,"/STD_",modelyear-(y-1),".std",sep=""),,quote=F,,,,,row.names=F,col.names=T)
-#STD<-read.delim(paste(pathM,"/tem.STD",sep=""),sep="")
-#write.table(STD,file=paste(pathR,"/STD_",modelyear-(y-1),".std",sep=""),,quote=F,,,,,row.names=F,col.names=T)
-
-#End y loop
-
 
 }
 
 T_end<-Sys.time()
 
 T_end-T_start
+#---------------------------------------------
+# End of retrospective model running loop
+#---------------------------------------------
+#
+#-------------------------
+#Reset data file to run sensitivities
+#-------------------------
 
-#reset data file
 setwd(pathM)
-write.table(DAT,file=paste(pathM,"/goa_pop_2011.dat",sep=""),,quote=F,,,,,row.names=F,col.names=F)
+#write.table(DAT,file=paste(pathM,"/goa_pop_2011.dat",sep=""),,quote=F,,,,,row.names=F,col.names=F)
+write.table(DAT,file=paste(pathM,"/goa_pop_2011.dat",sep=""),quote=F,row.names=F,col.names=F)
 
+#############################
+# Run sensitivity runs
+##############################
 for(y in 1:length(CTL[1,])) {
-  write.table(CTL[,y],file=paste(pathM,"/tem.ctl",sep=""),,quote=F,,,,,row.names=F,col.names=F)
-  shell("tem.EXE") 
+  write.table(CTL[,y],file=paste(pathM,"/tem.ctl",sep=""),quote=F,row.names=F,col.names=F)
+  shell(paste('tem.exe ','-nox'))
+
 #============================================================================================
 #============= Get/write results
 #============================================================================================
@@ -218,10 +235,7 @@ file.copy(from=paste(pathM,"/proj.dat",sep=""),to=paste(pathR,"/par_prj_",y,".pr
 #============================================================================================
 
 
-library(ggplot2)
-library(lattice)
-library(reshape2)
-
+### Little function for extracting stuff out of the sensitivity runs..
 filesearch <- function (x,y) {
   output<-cbind(seq(1,y),seq(1,y),seq(1,y),seq(1,y),seq(1,y),seq(1,y),seq(1,y))
   colnames(output)<-c("Test","lnL","ABC","SSB","Catchability","Natmort","MeanRec")
@@ -253,7 +267,6 @@ filesearch <- function (x,y) {
 }
 
 #location of data files
-#setwd("//nmfs.local/AKC-ABL/Users2/Dana.Hanselman/My Documents/2013CIEs/POPNov2011/arc") 
 setwd(pathR)
 y<-filesearch("rep_sens_",21)
 #sensplot<-function(x) {
@@ -264,10 +277,7 @@ y[,2]<-(as.numeric(y[,2])-as.numeric(y[1,2]))
 z<-melt(y[-1,],id=c("Test"))
 z[["sign"]]=ifelse(z[["value"]]>=0,"positive","negative")
 a<-  ggplot(data=z, aes(x=Test, y=value,fill=sign))+scale_fill_manual(values = c("positive" = "darkblue", "negative" = "red")) 
-
-
 b <- a + geom_bar(stat = "identity", position = "stack")
-
 b <- b + scale_fill_brewer(palette = "Set1")
 sensitivity_theme <- theme_update(axis.text.x = element_text(angle = 90,
                                                              hjust = 1), panel.grid.major = element_line(colour = "grey90"),
@@ -277,8 +287,6 @@ c <- b + facet_grid(variable ~ .) + theme(legend.position = "none")
 c2 <- c + facet_grid(variable ~ ., scale = "free_y")
 c2  <-c2+labs(y="Percent difference from reference model")+geom_abline(intercept = 0, ,slope=0,colour = "dark green", size = 1.)
 c2
-#abline(h=0)
-#      z[["sign"]]=ifelse(z[["value"]]>=0,"positive","negative")
 
 #============================================================================================
 #============= Plot retro graphs
@@ -336,7 +344,7 @@ for (i in modelyear:(modelyear-numretros)) {
 #########################################
 # Do some retro plots
 #########################################
-## Simple retro line graph
+## Simple brute force retro line graph
 
 plot(ssb[,1],100*(ssb[,2]-ssb[,2])/ssb[,2],type="l",lwd=3,xaxt="n",las=2,xlab="",ylab="",cex.axis=1.5,ylim=c(-50,50),lty=2)
 
@@ -403,7 +411,8 @@ for(y in seq(1,length(recdevs[,1]),2)){
 
 mtext("Year",side=1,line=4.25,cex=1.1)
 
-##### Begin squid plot
+##### Begin squid plot for recruitment cohort changes over time
+### helper function for adding shaded polygons
 addpoly <- function(yrvec, lower, upper, shadecol = rgb(0, 
                                                         0, 0, 0.1), col = 1) {
   polygon(x = c(yrvec, rev(yrvec)), y = c(lower, rev(upper)), 
@@ -411,11 +420,9 @@ addpoly <- function(yrvec, lower, upper, shadecol = rgb(0,
   lines(yrvec, lower, lty = 3, col = col)
   lines(yrvec, upper, lty = 3, col = col)
 }
-
+####
 ### Squids
-
-colvec <- rich.colors.short(length(cohorts), alpha = 0.7)
-shadecolvec <- rich.colors.short(length(numretros), alpha = 0.1)
+#### Make some color palletes
 colvec <- rainbow(numretros+1, alpha = 0.7)
 shadecolvec <- rainbow(numretros+1, alpha = 0.075)
 colvec.txt <- colvec
@@ -560,11 +567,10 @@ polygon(d, col="red", border="blue")
 polygon(e, col=rgb(0.2,0.7 , 0.8,0.5), border="red")
 
 
-library(MASS)
-library(emdbook)
+
 z<-cbind(mcmc$M,mcmc$q1)
 HPDregionplot(mcmc(z),col="green",lwd=3,xlab="Natural mortality",ylab="Catchability",main="Northern rockfish")
 points(mcmc$M,mcmc$q1,col="yellow",pch="*",cex=1)
 
-
+###### What else needs to be done?
 
