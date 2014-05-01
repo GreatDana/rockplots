@@ -22,9 +22,9 @@ library(MASS)
 library(emdbook)
 
 
-#============================================================================================
-#============= Set up directories
-#============================================================================================
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+#/\/\/\/\/\/\/\/\ Set up directories
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 setwd("C:/SA/Retro")
 path<-getwd()
 
@@ -51,25 +51,25 @@ st_end[,2]<-Sec_end
 mcmcon<-"NO"
 mcmcruns<-50000  # Could change these, but I like 5000 as a manageable number to deal with
 mcmcsave<-mcmcruns/5000
-#============================================================================================
-#============= Set up some model dimensions
-#============================================================================================
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+#/\/\/\/\/\/\/\/\ Set up some model dimensions
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 styr<-as.numeric(DAT[Sec_st[2]-3]) # start of model (example 1961 for POP)
 modelyear<-as.numeric(DAT[Sec_st[2]-1]) #current model year
 nages<-as.numeric(DAT[Sec_st[2]+3]) # number of age bins
 nlens<-as.numeric(DAT[Sec_st[2]+5]) # number of length bins
 numretros<-10 # number of retrospective years
 
-#============================================================================================
-#============= Run retrospective loop
-#============================================================================================
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+#/\/\/\/\/\/\/\/\ Run retrospective loop
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 T_start<-Sys.time() Timer start
 
 for(y in 1:(numretros+1)) {
 
-#============================================================================================
-#============= Concatenate DAT file
-#============================================================================================
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+#/\/\/\/\/\/\/\/\ Concatenate DAT file
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 
 # Set endyr
 yrs_retro<-seq(modelyear-numretros,modelyear)
@@ -171,9 +171,9 @@ DAT_retro<-c(DAT_retro,DAT[st_end[33,1]:st_end[33,2]])
 write.table(DAT_retro,file=paste(pathM,"/goa_pop_2011.dat",sep=""),quote=F,row.names=F,col.names=F)
 
 
-#============================================================================================
-#============= Run model
-#============================================================================================
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+#/\/\/\/\/\/\/\/\ Run model
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 
 ## set your number of MCMC runs at the top of the program... 
 setwd(pathM)
@@ -182,9 +182,9 @@ if(mcmcon=="YES") shell(paste('tem.EXE',' -mcmc ',mcmcruns,'-mcsave ',mcmcsave))
    
 
 
-#============================================================================================
-#============= Get/write results
-#============================================================================================
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+#/\/\/\/\/\/\/\/\ Get/write results
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 
 
 if(mcmcon=="YES") {
@@ -215,16 +215,16 @@ setwd(pathM)
 #write.table(DAT,file=paste(pathM,"/goa_pop_2011.dat",sep=""),,quote=F,,,,,row.names=F,col.names=F)
 write.table(DAT,file=paste(pathM,"/goa_pop_2011.dat",sep=""),quote=F,row.names=F,col.names=F)
 
-#############################
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 # Run sensitivity runs
-##############################
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 for(y in 1:length(CTL[1,])) {
   write.table(CTL[,y],file=paste(pathM,"/tem.ctl",sep=""),quote=F,row.names=F,col.names=F)
   shell(paste('tem.exe ','-nox'))
 
-#============================================================================================
-#============= Get/write results
-#============================================================================================
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+#/\/\/\/\/\/\/\/\ Get/write results
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 
 
 file.copy(from=paste(pathM,"/tem.STD",sep=""),to=paste(pathR,"/std_sens_",y,".std",sep=""),overwrite=T)
@@ -233,9 +233,9 @@ file.copy(from=paste(pathM,"/tem.par",sep=""),to=paste(pathR,"/par_sens_",y,".pa
 file.copy(from=paste(pathM,"/proj.dat",sep=""),to=paste(pathR,"/par_prj_",y,".prj",sep=""),overwrite=T)
 
 }
-#============================================================================================
-#============= Plot sensitivity graph
-#============================================================================================
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+#/\/\/\/\/\/\/\/\ Plot sensitivity graph
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 
 
 ### Little function for extracting stuff out of the sensitivity runs..
@@ -292,9 +292,9 @@ c2  <-c2+labs(y="Percent difference from reference model")+geom_abline(intercept
 c2
 dev.print(png,file=paste(pathR,"/sensitivity.png",sep=""),width=1024,height=768)
 
-#============================================================================================
-#============= Plot retro graphs
-#============================================================================================
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+#/\/\/\/\/\/\/\/\ Plot retro graphs
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 
   setwd(pathR)
   ssb<-seq(1,(modelyear-styr+1))
@@ -345,9 +345,9 @@ for (i in modelyear:(modelyear-numretros)) {
                    ),modelyear)
  colnames(recdevs)<-c("Year",seq(modelyear,modelyear-numretros))
                         
-#########################################
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 # Do some retro plots
-#########################################
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 ## Simple brute force retro line graph
 
 plot(ssb[,1],100*(ssb[,2]-ssb[,2])/ssb[,2],type="l",lwd=3,xaxt="n",las=2,xlab="",ylab="",cex.axis=1.5,ylim=c(-50,50),lty=2)
@@ -395,8 +395,9 @@ for(y in seq(1,length(totbio[,1]),2)){
 mtext("Year",side=1,line=4.25,cex=1.1)
 
 dev.print(png,file=paste(pathR,"/tbretrostandard.png",sep=""),width=1024,height=768)
-
-################ Do cool retro plots
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+# Do cool retro plots
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 recbak<-recdevs
 recdevs<-recbak
 
@@ -424,8 +425,6 @@ xlim <- c(0, 10)
 
 plot(0, type = "n", xlim = xlim, ylim = ylim, ylab = "Recruitment deviation", 
      xlab = "Years since birth", axes = FALSE,main="Pacific ocean perch recruitment retrospective")
-#plot(0, type = "n", xlim = xlim,  ylab = "Recruitment deviation", 
-#     xlab = "Years since birth", axes = FALSE,main="Pacific ocean perch recruitment retrospective")
 
 axis(1, at = 0:10)
 axis(2, at = (-round(max(recdevs[,2:12],na.rm=T)/5,1)*5):(round(max(recdevs[,2:12],na.rm=T)/5,1)*5), las = 1)
@@ -445,7 +444,7 @@ box()
          bg = rgb(1, 1, 1, 0.3), box.col = NA,cex=1)
 dev.print(png,file=paste(pathR,"/squid.png",sep=""),width=1024,height=768)
 
-
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 #### Read in mcmc files for retro:
 #Example of whats in a evalout for 2011
 #totbio and ssb  102
@@ -455,7 +454,7 @@ dev.print(png,file=paste(pathR,"/squid.png",sep=""),width=1024,height=768)
 #rec_proj	10
 #next year tot bio	1
 #total	225
-
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 (for i in modelyear:(modelyear-numretros))
 mcmc<-(read.table("mcmc_2011.std",header=F,sep="")) #,nrow=5000,ncol=50+3*(i-styr+1)+nages-recage)
 mcmc<-mcmc[0.2*mcmcruns:mcmcruns,] # remove burning
@@ -503,9 +502,9 @@ l=l+1
   ssbuci[l,1:(modelyear-styr+1-l+1)]<-mcmcuci[(133-2*(l-1)):(183-2*(l-1)-(l-1))]
 }
 
-###################################################
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 # Plot absolute differences with credibility bands
-###################################################
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 
 plot(styr:modelyear,ssbuci[1,]/1000,pch="",ylim=c(0,(1.1*max(ssbuci,na.rm=T)/1000)),xlab="Year",ylab="Spawning biomass (kt)")
 for (i in 1:numretros) {
@@ -515,9 +514,9 @@ for (i in 1:numretros) {
 }
 dev.print(png,file=paste(pathR,"/retroabs.png",sep=""),width=1024,height=768)
 
-###################################################
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 # Plot relative differences with credibility bands
-###################################################
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\ 
 
 plot(styr:modelyear,ssbuci[1,]/1000,pch="",ylim=c(-100,100),xlab="Year",ylab="Percent difference from terminal year")
 abline(h=0,lwd=3,lty=2,col=colvec[1])
@@ -529,9 +528,9 @@ for (i in 1:numretros) {
 }
 dev.print(png,file=paste(pathR,"/retrorel.png",sep=""),width=1024,height=768)
 
-###################################################
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\ 
 # Plot some posterior/prior plots
-##################################################### 
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\ 
 
 ### Plot next year SSB over time
 themecol<-"black" #"goldenrod" for ppt
@@ -540,7 +539,6 @@ d <- density(qpr)
 par(bg="transparent",col.axis=themecol,col=themecol,col.main="white",col.lab=themecol)#plot(e, main="Prior and posterior of q",xlim=c(0,5),ylim=c(0,1.1),xlab="Catchability",yaxt="n")
 plot(d, main="Prior and posterior of q",ylim=c(0,max(d$y)*1.7),xlab="Projected female spawning biomass (kt)",yaxt="n",pch="",lty=0)
 
-#polygon(d, col="red", border="blue")
 l<-0
 for(i in (modelyear-numretros):modelyear) {
   mcmc<-(read.table(paste("mcmc_",i,".std",sep=""),header=F,sep="")) #,nrow=5000,ncol=50+3*(i-styr+1)+nages-recage)
@@ -562,9 +560,6 @@ for(i in (modelyear-numretros):modelyear) {
 basectl<-scan(text=as.character(CTL[3:59,1]))
 
 e<- density(mcmc$ssb_next/1000)
-#plot(d, main="Prior and posterior of q",xlim=c(0,5),ylim=c(0,1.1),xlab="Catchability",yaxt="n")
-#polygon(d, col="red", border="blue")
-#polygon(e, col=rgb(0.2,0.7 , 0.8,0.5), border="red")
 polygon(e, col=shadecolvec[l],border=colvec[l],lwd=2)
 }
 
@@ -680,9 +675,9 @@ legend("top", lwd = 3, lty = 1, pch = "", col = colvec,
        bg = rgb(1, 1, 1, 0.3), box.col = NA,cex=1)
 dev.print(png,file=paste(pathR,"/catchproj.png",sep=""),width=1024,height=768)
 
-########################################################
-########### Plot catchability prior versus posterior
-########################################################
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\ 
+#Plot catchability prior versus posterior
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\ 
 colvec2 <- rainbow(numretros+1, alpha = 0.8)
 shadecolvec2 <- rainbow(numretros+1, alpha = 0.3)
 
@@ -705,9 +700,9 @@ legend("top", lwd = 3,  pch = "", col = c(colvec2[1],colvec2[8]),
        bg = rgb(1, 1, 1, 0.3), box.col = NA,cex=1,lty=c(2,1))
 dev.print(png,file=paste(pathR,"/qpost.png",sep=""),width=1024,height=768)
 
-########################################################
-########### Plot natural mortality prior versus posterior
-########################################################
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\ 
+# Plot natural mortality prior versus posterior
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\ 
 colvec2 <- rainbow(numretros+1, alpha = 0.8)
 shadecolvec2 <- rainbow(numretros+1, alpha = 0.3)
 
@@ -729,13 +724,15 @@ legend("top", lwd = 3,  pch = "", col = c(colvec2[1],colvec2[8]),
        bg = rgb(1, 1, 1, 0.3), box.col = NA,cex=1,lty=c(2,1))# POP natural mortality
 
 dev.print(png,file=paste(pathR,"/mpost.png",sep=""),width=1024,height=768)
-################################
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\ 
 ## Plot joint q/M graph
-################################
+#/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\ 
+
 z<-cbind(mcmc$M,mcmc$q1)
 png(paste(pathR,"/jointqm.png"))
 HPDregionplot(z,col="green",lwd=3,xlab="Natural mortality",ylab="Catchability",main="Joint posterior distribution")
 points(mcmc$M,mcmc$q1,col="dark blue",pch="*",cex=1)
 dev.print(png,file=paste(pathR,"/jointqm.png",sep=""),width=1024,height=768)
+
 ###### What else needs to be done?
 
