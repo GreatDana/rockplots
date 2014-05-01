@@ -9,6 +9,9 @@
 # Runs sensitivity models for sensitivity graph
 # Plots retrospective plots
 # Plots some posterior and prior distribution plots for M and q
+# !!!!!!!!!!!!!!!!!What's left to do:
+# !! 1) Perhaps do the control files within this script instead of loading models.dat
+# !! 2) Test with other rockfish
 ###################################################################################
 
 ################ Load up some libraries needed
@@ -287,6 +290,7 @@ c <- b + facet_grid(variable ~ .) + theme(legend.position = "none")
 c2 <- c + facet_grid(variable ~ ., scale = "free_y")
 c2  <-c2+labs(y="Percent difference from reference model")+geom_abline(intercept = 0, ,slope=0,colour = "dark green", size = 1.)
 c2
+dev.print(png,file=paste(pathR,"/sensitivity.png",sep=""),width=1024,height=768)
 
 #============================================================================================
 #============= Plot retro graphs
@@ -365,6 +369,7 @@ for(y in seq(1,length(ssb[,1]),2)){
   axis(side=1,at=ssb[,1][y],ssb[,1][y],cex.axis=1.5,las=2)}
 
 mtext("Year",side=1,line=4.25,cex=1.1)
+dev.print(png,file=paste(pathR,"/ssbretrostandard.png",sep=""),width=1024,height=768)
 
 ################ Total bio
 
@@ -388,28 +393,14 @@ for(y in seq(1,length(totbio[,1]),2)){
   axis(side=1,at=totbio[,1][y],totbio[,1][y],cex.axis=1.5,las=2)}
 
 mtext("Year",side=1,line=4.25,cex=1.1)
+
+dev.print(png,file=paste(pathR,"/tbretrostandard.png",sep=""),width=1024,height=768)
+
 ################ Do cool retro plots
 recbak<-recdevs
-recdevs<-recdevs[-seq(1,41),]
-plot(recdevs[,1],100*(recdevs[,2]-recdevs[,2])/recdevs[,2],type="l",lwd=3,xaxt="n",las=2,xlab="",ylab="",cex.axis=1.5,ylim=c(-150,150),lty=2)
+recdevs<-recbak
 
-lines(recdevs[,1],100*(recdevs[,3]-recdevs[,2])/recdevs[,2],lwd=1.5,col="purple")
-lines(recdevs[,1],100*(recdevs[,4]-recdevs[,2])/recdevs[,2],lwd=1.5,col="violet")
-lines(recdevs[,1],100*(recdevs[,5]-recdevs[,2])/recdevs[,2],lwd=1.5,col="dark blue")
-lines(recdevs[,1],100*(recdevs[,6]-recdevs[,2])/recdevs[,2],lwd=1.5,col="blue")
-lines(recdevs[,1],100*(recdevs[,7]-recdevs[,2])/recdevs[,2],lwd=1.5,col="green")
-lines(recdevs[,1],100*(recdevs[,8]-recdevs[,2])/recdevs[,2],lwd=1.5,col="dark green")
-lines(recdevs[,1],100*(recdevs[,9]-recdevs[,2])/recdevs[,2],lwd=1.5,col="red")
-lines(recdevs[,1],100*(recdevs[,10]-recdevs[,2])/recdevs[,2],lwd=1.5,col="dark red")
-lines(recdevs[,1],100*(recdevs[,11]-recdevs[,2])/recdevs[,2],lwd=1.5,col="brown")
-
-mtext("Percent differences",side=2,line=6,cex=1.1)
-mtext("from terminal year",side=2,line=4.5,cex=1.1)
-
-for(y in seq(1,length(recdevs[,1]),2)){
-  axis(side=1,at=recdevs[,1][y],recdevs[,1][y],cex.axis=1.5,las=2)}
-
-mtext("Year",side=1,line=4.25,cex=1.1)
+recdevs<-recdevs[-seq(1,(length(recdevs[,1])-numretros-1)),] # get rid of
 
 ##### Begin squid plot for recruitment cohort changes over time
 ### helper function for adding shaded polygons
@@ -425,36 +416,35 @@ addpoly <- function(yrvec, lower, upper, shadecol = rgb(0,
 #### Make some color palletes
 colvec <- rainbow(numretros+1, alpha = 0.7)
 shadecolvec <- rainbow(numretros+1, alpha = 0.075)
-colvec.txt <- colvec
-for (i in 1:length(colvec)) {
-  tmp <- col2rgb(colvec[i])/255
-  colvec.txt[i] <- rgb(tmp[1]/2, tmp[2]/2, tmp[3]/2, alpha = 0.7)
-}
-print(cbind(colvec, colvec.txt))
-ylim <-c(-1., 1)
-ylim <- ylim + c(0, 1)
+# 
+ylim <-c(- max(recdevs[,2:12],na.rm=T), max(recdevs[,2:12],na.rm=T))
+ylim <- ylim + c(0,0.5*max(recdevs[,2:12],na.rm=T))
 xlim <- c(0, 10)
   xlim <- xlim + c(-0.8, 0.8)
-labies<-seq(1997,2008)
+
 plot(0, type = "n", xlim = xlim, ylim = ylim, ylab = "Recruitment deviation", 
      xlab = "Years since birth", axes = FALSE,main="Pacific ocean perch recruitment retrospective")
+#plot(0, type = "n", xlim = xlim,  ylab = "Recruitment deviation", 
+#     xlab = "Years since birth", axes = FALSE,main="Pacific ocean perch recruitment retrospective")
+
 axis(1, at = 0:10)
-axis(2, at = -1:1., las = 1)
+axis(2, at = (-round(max(recdevs[,2:12],na.rm=T)/5,1)*5):(round(max(recdevs[,2:12],na.rm=T)/5,1)*5), las = 1)
+### rounding and multiplying by 5 is to make axes more general and and have zero centered between intervals
 abline(h = 0, col = "grey")
 box()
 
   i=0
-  for(iy in 32:22) {
+  for(iy in (numretros+1):1) {
     i=i+1
     lines(seq(0,10),c(rev(recdevs[iy,2:12])[(12-i):11],rep(NA,11-i)), 
-          type = "o", col = colvec[iy-21], lwd = 3, pch = 16)
-       text(x=i-1+0.5,y=recdevs[iy,2],labels=as.character(2012-i),col=colvec[iy-21]) }
+          type = "o", col = colvec[iy], lwd = 3, pch = 16)
+       text(x=i-1+0.5,y=recdevs[iy,2],labels=as.character((modelyear+1)-i),col=colvec[iy]) }
 
   legend("top", lwd = 3, lty = 1, pch = 16, col = colvec, 
-         legend = seq(2001,2011), title = "Cohort birth year", ncol = 6, 
+         legend = seq((modelyear-numretros),modelyear), title = "Cohort year class", ncol = 6, 
          bg = rgb(1, 1, 1, 0.3), box.col = NA,cex=1)
+dev.print(png,file=paste(pathR,"/squid.png",sep=""),width=1024,height=768)
 
-### Next step, generalize the squid, move on to MCMC retrospective plots... sweet!
 
 #### Read in mcmc files for retro:
 #Example of whats in a evalout for 2011
@@ -468,18 +458,18 @@ box()
 
 (for i in modelyear:(modelyear-numretros))
 mcmc<-(read.table("mcmc_2011.std",header=F,sep="")) #,nrow=5000,ncol=50+3*(i-styr+1)+nages-recage)
-mcmc<-mcmc[1001:5000,] # remove burning
+mcmc<-mcmc[0.2*mcmcruns:mcmcruns,] # remove burning
 
 ### Identify variables
 mcmcnames<-  c("sigr","q1",  "q2",	"f40",	"M",	"ssb_next",	"ABC",	"obj_fun")
-for(i in styr:endyr) mcmcnames<- c(mcmcnames,paste("totbio",i,sep="")) 
-for(i in (styr-nages+2):endyr) mcmcnames<- c(mcmcnames,paste("recdev",i,sep="")) 
-for(i in styr:endyr) mcmcnames<- c(mcmcnames,paste("ssb",i,sep="")) 
+for(i in styr:modelyear) mcmcnames<- c(mcmcnames,paste("totbio",i,sep="")) 
+for(i in (styr-nages+2):modelyear) mcmcnames<- c(mcmcnames,paste("recdev",i,sep="")) 
+for(i in styr:modelyear) mcmcnames<- c(mcmcnames,paste("ssb",i,sep="")) 
 mcmcnames<-c(mcmcnames,"LMR")
-for(i in (endyr+1):(endyr+15)) mcmcnames<-c(mcmcnames,paste("ssbproj",i,sep=""))
-for(i in (endyr+1):(endyr+15)) mcmcnames<-c(mcmcnames,paste("catchproj",i,sep=""))
-for(i in (endyr+1):(endyr+10)) mcmcnames<-c(mcmcnames,paste("recproj",i,sep=""))
-mcmcnames<-c(mcmcnames,paste("totbioproj",endyr+1,sep=""))
+for(i in (modelyear+1):(modelyear+15)) mcmcnames<-c(mcmcnames,paste("ssbproj",i,sep=""))
+for(i in (modelyear+1):(modelyear+15)) mcmcnames<-c(mcmcnames,paste("catchproj",i,sep=""))
+for(i in (modelyear+1):(modelyear+10)) mcmcnames<-c(mcmcnames,paste("recproj",i,sep=""))
+mcmcnames<-c(mcmcnames,paste("totbioproj",modelyear+1,sep=""))
 names(mcmc)<-mcmcnames
 
 ### Do percentile confidence bounds
@@ -508,10 +498,14 @@ l=l+1
  # mcmed<-rbind(mcmed,mcmcmed)
 #  mcuci<-rbind(mcuci,mcmcuci)
 #  mclci<-rbind(mclci,mcmclci)
-  ssbmed[l,1:(endyr-styr+1-l+1)]<-mcmcmed[(133-2*(l-1)):(183-2*(l-1)-(l-1))]
-  ssblci[l,1:(endyr-styr+1-l+1)]<-mcmclci[(133-2*(l-1)):(183-2*(l-1)-(l-1))]
-  ssbuci[l,1:(endyr-styr+1-l+1)]<-mcmcuci[(133-2*(l-1)):(183-2*(l-1)-(l-1))]
+  ssbmed[l,1:(modelyear-styr+1-l+1)]<-mcmcmed[(133-2*(l-1)):(183-2*(l-1)-(l-1))]
+  ssblci[l,1:(modelyear-styr+1-l+1)]<-mcmclci[(133-2*(l-1)):(183-2*(l-1)-(l-1))]
+  ssbuci[l,1:(modelyear-styr+1-l+1)]<-mcmcuci[(133-2*(l-1)):(183-2*(l-1)-(l-1))]
 }
+
+###################################################
+# Plot absolute differences with credibility bands
+###################################################
 
 plot(styr:modelyear,ssbuci[1,]/1000,pch="",ylim=c(0,(1.1*max(ssbuci,na.rm=T)/1000)),xlab="Year",ylab="Spawning biomass (kt)")
 for (i in 1:numretros) {
@@ -519,6 +513,11 @@ for (i in 1:numretros) {
   addpoly(styr:(modelyear-i+1),ssblci[i,1:(modelyear-styr-i+2)]/1000,ssbuci[i,1:(modelyear-styr-i+2)]/1000,shadecol=shadecolvec[i])
   
 }
+dev.print(png,file=paste(pathR,"/retroabs.png",sep=""),width=1024,height=768)
+
+###################################################
+# Plot relative differences with credibility bands
+###################################################
 
 plot(styr:modelyear,ssbuci[1,]/1000,pch="",ylim=c(-100,100),xlab="Year",ylab="Percent difference from terminal year")
 abline(h=0,lwd=3,lty=2,col=colvec[1])
@@ -528,49 +527,215 @@ for (i in 1:numretros) {
           (1- ssbuci[i,1:(modelyear-styr-i+2)]/(ssbmed[1,1:(modelyear-styr-i+2)]))*100,shadecol=shadecolvec[i])
   
 }
+dev.print(png,file=paste(pathR,"/retrorel.png",sep=""),width=1024,height=768)
 
-## Do some posterior/prior plots
+###################################################
+# Plot some posterior/prior plots
+##################################################### 
 
-mcmc<-(read.table(paste("mcmc_",modelyear,".std",sep=""),header=F,sep="")) #,nrow=5000,ncol=50+3*(i-styr+1)+nages-recage)
-mcmc<-mcmc[1001:5000,] # remove burning
-
-### Identify variables
-mcmcnames<-  c("sigr","q1",  "q2",  "f40",	"M",	"ssb_next",	"ABC",	"obj_fun")
-for(i in styr:endyr) mcmcnames<- c(mcmcnames,paste("totbio",i,sep="")) 
-for(i in (styr-nages+2):endyr) mcmcnames<- c(mcmcnames,paste("recdev",i,sep="")) 
-for(i in styr:endyr) mcmcnames<- c(mcmcnames,paste("ssb",i,sep="")) 
-mcmcnames<-c(mcmcnames,"LMR")
-for(i in (endyr+1):(endyr+15)) mcmcnames<-c(mcmcnames,paste("ssbproj",i,sep=""))
-for(i in (endyr+1):(endyr+15)) mcmcnames<-c(mcmcnames,paste("catchproj",i,sep=""))
-for(i in (endyr+1):(endyr+10)) mcmcnames<-c(mcmcnames,paste("recproj",i,sep=""))
-mcmcnames<-c(mcmcnames,paste("totbioproj",endyr+1,sep=""))
-names(mcmc)<-mcmcnames
-par(bg="transparent",col.axis="goldenrod",col="goldenrod",col.main="white",col.lab="goldenrod")
-# Filled Density Plot
-# POP catchability
-basectl<-scan(text=as.character(CTL[3:59,1]))
-qpr<-rlnorm(40000,log(as.numeric(basectl[26])),as.numeric(basectl[27])) ## read values from CTL file
-
+### Plot next year SSB over time
+themecol<-"black" #"goldenrod" for ppt
+qpr<-rlnorm(40000,log(sapply(ssbmed,mean,na.rm=T)/1000),0.15) ## read values from CTL file
 d <- density(qpr)
-e<- density(mcmc$q1)
-plot(d, main="Prior and posterior of q",xlim=c(0,5),ylim=c(0,1.1),xlab="Catchability",yaxt="n")
-polygon(d, col="red", border="blue")
-polygon(e, col=rgb(0.2,0.7 , 0.8,0.5), border="red")
+par(bg="transparent",col.axis=themecol,col=themecol,col.main="white",col.lab=themecol)#plot(e, main="Prior and posterior of q",xlim=c(0,5),ylim=c(0,1.1),xlab="Catchability",yaxt="n")
+plot(d, main="Prior and posterior of q",ylim=c(0,max(d$y)*1.7),xlab="Projected female spawning biomass (kt)",yaxt="n",pch="",lty=0)
 
-# POP natural mortality
+#polygon(d, col="red", border="blue")
+l<-0
+for(i in (modelyear-numretros):modelyear) {
+  mcmc<-(read.table(paste("mcmc_",i,".std",sep=""),header=F,sep="")) #,nrow=5000,ncol=50+3*(i-styr+1)+nages-recage)
+  mcmc<-mcmc[1001:5000,] # remove burning
+  l<-l+1
+  ### Identify variables
+  mcmcnames<-  c("sigr","q1",  "q2",  "f40",  "M",  "ssb_next",  "ABC",	"obj_fun")
+  for(j in styr:i) mcmcnames<- c(mcmcnames,paste("totbio",j,sep="")) 
+  for(j in (styr-nages+2):i) mcmcnames<- c(mcmcnames,paste("recdev",j,sep="")) 
+  for(i in styr:i) mcmcnames<- c(mcmcnames,paste("ssb",j,sep="")) 
+  mcmcnames<-c(mcmcnames,"LMR")
+  for(i in (i+1):(i+15)) mcmcnames<-c(mcmcnames,paste("ssbproj",j,sep=""))
+  for(i in (i+1):(i+15)) mcmcnames<-c(mcmcnames,paste("catchproj",j,sep=""))
+  for(i in (i+1):(i+10)) mcmcnames<-c(mcmcnames,paste("recproj",j,sep=""))
+  mcmcnames<-c(mcmcnames,paste("totbioproj",i+1,sep=""))
+  names(mcmc)<-mcmcnames
+
+# Filled Density Plot
+basectl<-scan(text=as.character(CTL[3:59,1]))
+
+e<- density(mcmc$ssb_next/1000)
+#plot(d, main="Prior and posterior of q",xlim=c(0,5),ylim=c(0,1.1),xlab="Catchability",yaxt="n")
+#polygon(d, col="red", border="blue")
+#polygon(e, col=rgb(0.2,0.7 , 0.8,0.5), border="red")
+polygon(e, col=shadecolvec[l],border=colvec[l],lwd=2)
+}
+
+legend("top", lwd = 3, lty = 1, pch = 16, col = rev(colvec), 
+       legend = seq(modelyear,(modelyear-numretros)), title = "Model year", ncol = 6, 
+       bg = rgb(1, 1, 1, 0.3), box.col = NA,cex=1)
+
+
+dev.print(png,file=paste(pathR,"/ssbretro.png",sep=""),width=1024,height=768)
+
+
+### Plot catchability over time
+qpr<-rlnorm(40000,log(as.numeric(basectl[26])),as.numeric(basectl[27])) ## read values from CTL file
+d <- density(qpr)
+plot(d, main="Prior and posterior of q",xlim=c(0,0.6*max(d$x)),ylim=c(0,1.4*max(d$y)),xlab="Catchability",yaxt="n",lty=0)
+
+ polygon(d, col="red", border="black",lty=2)
+l<-0
+for(i in (modelyear-numretros):modelyear) {
+  mcmc<-(read.table(paste("mcmc_",i,".std",sep=""),header=F,sep="")) #,nrow=5000,ncol=50+3*(i-styr+1)+nages-recage)
+  mcmc<-mcmc[1001:5000,] # remove burning
+  l<-l+1
+  ### Identify variables
+  mcmcnames<-  c("sigr","q1",  "q2",  "f40",  "M",  "ssb_next",	"ABC",	"obj_fun")
+  for(j in styr:i) mcmcnames<- c(mcmcnames,paste("totbio",j,sep="")) 
+  for(j in (styr-nages+2):i) mcmcnames<- c(mcmcnames,paste("recdev",j,sep="")) 
+  for(i in styr:i) mcmcnames<- c(mcmcnames,paste("ssb",j,sep="")) 
+  mcmcnames<-c(mcmcnames,"LMR")
+  for(i in (i+1):(i+15)) mcmcnames<-c(mcmcnames,paste("ssbproj",j,sep=""))
+  for(i in (i+1):(i+15)) mcmcnames<-c(mcmcnames,paste("catchproj",j,sep=""))
+  for(i in (i+1):(i+10)) mcmcnames<-c(mcmcnames,paste("recproj",j,sep=""))
+  mcmcnames<-c(mcmcnames,paste("totbioproj",i+1,sep=""))
+  names(mcmc)<-mcmcnames
+  themecol<-"black" #"goldenrod" for ppt
+  
+  par(bg="transparent",col.axis=themecol,col=themecol,col.main="white",col.lab=themecol)
+  # Filled Density Plot
+  # POP catchability
+  basectl<-scan(text=as.character(CTL[3:59,1]))
+  qpr<-rlnorm(40000,log(as.numeric(basectl[26])),as.numeric(basectl[27])) ## read values from CTL file
+  
+  d <- density(qpr)
+  e<- density(mcmc$q1)
+  #plot(d, main="Prior and posterior of q",xlim=c(0,5),ylim=c(0,1.1),xlab="Catchability",yaxt="n")
+  #polygon(d, col="red", border="blue")
+  #polygon(e, col=rgb(0.2,0.7 , 0.8,0.5), border="red")
+  polygon(e, col=shadecolvec[l],border=colvec[l],lwd=2)
+}
+
+legend("top", lwd = 3,  pch = "", col = c("black",rev(colvec)), 
+       legend = c("Prior",seq(modelyear,(modelyear-numretros))), title = "Model year", ncol = 6, 
+       bg = rgb(1, 1, 1, 0.3), box.col = NA,cex=1,lty=c(2,rep(1,11)))
+
+dev.print(png,file=paste(pathR,"/qretro.png",sep=""),width=1024,height=768)
+
+### Plot projected SSB over time
+qpr<-rlnorm(40000,log(sapply(ssbmed,mean,na.rm=T)/1000),0.12) ## read values from CTL file
+d <- density(qpr)
+plot(d,ylim=c(0,max(d$y)*1.7),xlab="Projected female spawning biomass (kt)",yaxt="n",pch="",lty=0)
+
+l<-0
+j<-modelyear
+mcmc<-(read.table(paste("mcmc_",j,".std",sep=""),header=F,sep="")) #,nrow=5000,ncol=50+3*(i-styr+1)+nages-recage)
+  mcmc<-mcmc[1001:5000,] # remove burning
+  ### Identify variables
+  mcmcnames<-  c("sigr","q1",  "q2",  "f40",  "M",	"ssb_next",	"ABC",	"obj_fun")
+  for(i in styr:j) mcmcnames<- c(mcmcnames,paste("totbio",i,sep="")) 
+  for(i in (styr-nages+2):j) mcmcnames<- c(mcmcnames,paste("recdev",i,sep="")) 
+  for(i in styr:j) mcmcnames<- c(mcmcnames,paste("ssb",i,sep="")) 
+  mcmcnames<-c(mcmcnames,"LMR")
+  for(i in (j+1):(j+15)) mcmcnames<-c(mcmcnames,paste("ssbproj",i,sep=""))
+  for(i in (j+1):(j+15)) mcmcnames<-c(mcmcnames,paste("catchproj",i,sep=""))
+  for(i in (j+1):(j+10)) mcmcnames<-c(mcmcnames,paste("recproj",i,sep=""))
+  mcmcnames<-c(mcmcnames,paste("totbioproj",j+1,sep=""))
+  names(mcmc)<-mcmcnames
+   # Filled Density Plot
+plot(d, main="Prior and posterior of q",ylim=c(0,max(d$y)*1.7),xlab="Projected female spawning biomass (kt)",yaxt="n",pch="",lty=0)
+l<-1 
+ e<- density(mcmc$ssb_next/1000)
+  polygon(e, col="yellow",border=colvec[l],lwd=2.5)
+
+  for(i in (modelyear+2):(modelyear+6)) {
+ print(i)
+  l<-l+1
+    f<- density(mcmc[[paste("ssbproj",i,sep="")]]/1000) 
+  polygon(f, col=shadecolvec[l],border=colvec[l],lwd=2)}
+}
+
+legend("top", lwd = 3, lty = 1, pch = 16, col = colvec, 
+       legend = seq(modelyear+1,(modelyear+6)), title = "Model year", ncol = 6, 
+       bg = rgb(1, 1, 1, 0.3), box.col = NA,cex=1)
+
+dev.print(png,file=paste(pathR,"/spproj.png",sep=""),width=1024,height=768)
+
+### Plot projected catch over time (at full ABC)
+
+qpr<-rlnorm(40000,log(mean(mcmc$ABC)/1000),0.15) 
+d <- density(qpr)
+plot(d, main="Prior and posterior of q",ylim=c(0,max(d$y)*1.7),xlab="Projected catch (kt)",yaxt="n",pch="",lty=0)
+
+l<-1 
+e<- density(mcmc[[paste("catchproj",modelyear+1,sep="")]]/1000) 
+polygon(d, col="yellow",border=colvec[l],lwd=2.5)
+
+for(i in (modelyear+2):(modelyear+6)) {
+  print(i)
+  l<-l+1
+  f<- density(mcmc[[paste("catchproj",i,sep="")]]/1000) 
+  polygon(f, col=shadecolvec[l],border=colvec[l],lwd=2)}
+
+legend("top", lwd = 3, lty = 1, pch = "", col = colvec, 
+       legend = seq(modelyear+1,(modelyear+6)), title = "Model year", ncol = 6, 
+       bg = rgb(1, 1, 1, 0.3), box.col = NA,cex=1)
+dev.print(png,file=paste(pathR,"/catchproj.png",sep=""),width=1024,height=768)
+
+########################################################
+########### Plot catchability prior versus posterior
+########################################################
+colvec2 <- rainbow(numretros+1, alpha = 0.8)
+shadecolvec2 <- rainbow(numretros+1, alpha = 0.3)
+
+  polygon(d, col="red", border="blue")
+  basectl<-scan(text=as.character(CTL[3:59,1]))
+  qpr<-rlnorm(40000,log(as.numeric(basectl[26])),as.numeric(basectl[27])) ## read values from CTL file
+  d <- density(qpr)
+  plot(d, main="Prior and posterior of q",xlim=c(0,0.75*max(qpr)),ylim=c(0,max(d$y)*1.4),xlab="Catchability",yaxt="n",lty=0)
+  polygon(d, col=shadecolvec2[1], border=colvec2[1],lty=2,lwd=2)
+  
+  # Filled Density Plot
+  
+  d <- density(qpr)
+  e<- density(mcmc$q1)
+  polygon(e, col=shadecolvec2[8],border=colvec2[8],lwd=2)
+
+
+legend("top", lwd = 3,  pch = "", col = c(colvec2[1],colvec2[8]), 
+       legend = c("Prior","Posterior"), title = "Distribution", ncol = 1, 
+       bg = rgb(1, 1, 1, 0.3), box.col = NA,cex=1,lty=c(2,1))
+dev.print(png,file=paste(pathR,"/qpost.png",sep=""),width=1024,height=768)
+
+########################################################
+########### Plot natural mortality prior versus posterior
+########################################################
+colvec2 <- rainbow(numretros+1, alpha = 0.8)
+shadecolvec2 <- rainbow(numretros+1, alpha = 0.3)
+
+polygon(d, col="red", border="blue")
+basectl<-scan(text=as.character(CTL[3:59,1]))
 mpr<-rlnorm(40000,log(as.numeric(basectl[17])),as.numeric(basectl[18])) ## read values from CTL file
-
 d <- density(mpr)
+plot(d, main="Prior and posterior of q",xlim=c(0.02,1.2*max(mpr)),ylim=c(0,max(d$y)*1.4),xlab="Catchability",yaxt="n",lty=0)
+polygon(d, col=shadecolvec2[1], border=colvec2[1],lty=2,lwd=2)
+
+# Filled Density Plot
+
 e<- density(mcmc$M)
-plot(d, main="Prior and posterior of q",xlim=c(0,0.1),ylim=c(0,100),xlab="Natural mortality",yaxt="n")
-polygon(d, col="red", border="blue")
-polygon(e, col=rgb(0.2,0.7 , 0.8,0.5), border="red")
+polygon(e, col=shadecolvec2[8],border=colvec2[8],lwd=2)
 
 
+legend("top", lwd = 3,  pch = "", col = c(colvec2[1],colvec2[8]), 
+       legend = c("Prior","Posterior"), title = "Distribution", ncol = 1, 
+       bg = rgb(1, 1, 1, 0.3), box.col = NA,cex=1,lty=c(2,1))# POP natural mortality
 
+dev.print(png,file=paste(pathR,"/mpost.png",sep=""),width=1024,height=768)
+################################
+## Plot joint q/M graph
+################################
 z<-cbind(mcmc$M,mcmc$q1)
-HPDregionplot(mcmc(z),col="green",lwd=3,xlab="Natural mortality",ylab="Catchability",main="Northern rockfish")
-points(mcmc$M,mcmc$q1,col="yellow",pch="*",cex=1)
-
+png(paste(pathR,"/jointqm.png"))
+HPDregionplot(z,col="green",lwd=3,xlab="Natural mortality",ylab="Catchability",main="Joint posterior distribution")
+points(mcmc$M,mcmc$q1,col="dark blue",pch="*",cex=1)
+dev.print(png,file=paste(pathR,"/jointqm.png",sep=""),width=1024,height=768)
 ###### What else needs to be done?
 
