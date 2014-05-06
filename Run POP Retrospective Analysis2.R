@@ -1,7 +1,8 @@
 ###################################################################################
 # Script for finalizing GOA rockfish models
 # First section of code adapted from P. Hulson retrospective code used in 2011
-# 2014 revision by D. Hanselman
+# Ideas for retrospectives plots from Pacific hake assessment
+# 2014 version by D. Hanselman
 # Generalized code to work directly from the .dat file for each rockfish
 # Requires a models.dat file to read .ctls in for sensitivity, and for base model ctl file
 # Runs retrospective models, will also run MCMC (set flag mcmcon<-"YES")
@@ -11,7 +12,7 @@
 # Plots some posterior and prior distribution plots for M and q
 # !!!!!!!!!!!!!!!!!What's left to do:
 # !! 1) Perhaps do the control files within this script instead of loading models.dat
-# !! 2) Test with other rockfish
+# !! 2) Test with other rockfish besides NR and POP
 ###################################################################################
 
 ################ Load up some libraries needed
@@ -28,21 +29,23 @@ library(emdbook)
 setwd("C:/Retro")
 path<-getwd()
 
-species<-"NR"
-
-
+#### Set species and model year
+species<-"POP"
+modelyear<-2011
+##### Set up some paths
 path
 pathD<-paste(path,"/Data",sep="")
-
 pathR<-paste(path,"/Results",sep="")
-
 pathM<-paste(path,"/Model",sep="")
 
-# Get current data file
+# Get current data files
 CTL<-read.table(paste(pathD,"/",species,"_models.dat",sep=""),sep="\t")
+if(species=="POP")
+write.table(CTL[,1],file=paste(pathM,"/tem.ctl",sep=""),quote=F,row.names=F,col.names=F)
+if(species=="NR") write.table(CTL[,1],file=paste(pathM,"/mod3.ctl",sep=""),quote=F,row.names=F,col.names=F)
 
 
-DAT<-readLines(paste(pathD,"/goa_",species,"_2011.dat",sep=""),warn=FALSE)
+DAT<-readLines(paste(pathD,"/goa_",species,"_",modelyear,".dat",sep=""),warn=FALSE)
 
 Sec_st<-grep("#-",DAT)
 Sec_end<-grep("#!",DAT)
@@ -52,13 +55,13 @@ st_end[,1]<-Sec_st
 st_end[,2]<-Sec_end
 
 mcmcon<-"NO"
-mcmcruns<-50000  # Could change these, but I like 5000 as a manageable number to deal with
+mcmcruns<-500000  # Could change these, but I like 5000 as a manageable number to deal with
 mcmcsave<-mcmcruns/5000
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 #/\/\/\/\/\/\/\/\ Set up some model dimensions
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 styr<-as.numeric(DAT[Sec_st[2]-3]) # start of model (example 1961 for POP)
-modelyear<-as.numeric(DAT[Sec_st[2]-1]) #current model year
+#modelyear<-as.numeric(DAT[Sec_st[2]-1]) #current model year
 nages<-as.numeric(DAT[Sec_st[2]+3]) # number of age bins
 nlens<-as.numeric(DAT[Sec_st[2]+5]) # number of length bins
 numretros<-10 # number of retrospective years
@@ -66,7 +69,7 @@ numretros<-10 # number of retrospective years
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 #/\/\/\/\/\/\/\/\ Run retrospective loop
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-T_start<-Sys.time() Timer start
+T_start<-Sys.time() #Timer start
 
 for(y in 1:(numretros+1)) {
 
@@ -198,30 +201,36 @@ if(species=="NR") {
 if(species=="POP") {
 if(mcmcon=="YES") {
   shell(paste('"tem.exe"', '-mceval'))
-  file.copy(from=paste(pathM,"/evalout.prj",sep=""),to=paste(pathR,"/mcmc_",modelyear-(y-1),".std",sep=""),overwrite=T)
+  file.copy(from=paste(pathM,"/evalout.prj",sep=""),to=paste(pathR,"/",species,"_mcmc_",modelyear-(y-1),".std",sep=""),overwrite=T)
  }
+### Only write files if not in MCMC mode, because MCMC report files and such are goofy and will screw you up
 
+if(mcmcon=="NO") {
 file.copy(from=paste(pathM,"/tem.STD",sep=""),to=paste(pathR,"/std_",modelyear-(y-1),".std",sep=""),overwrite=T)
 file.copy(from=paste(pathM,"/report.rep",sep=""),to=paste(pathR,"/rep_",modelyear-(y-1),".rep",sep=""),overwrite=T)
 file.copy(from=paste(pathM,"/tem.par",sep=""),to=paste(pathR,"/par_",modelyear-(y-1),".par",sep=""),overwrite=T)
 file.copy(from=paste(pathM,"/proj.dat",sep=""),to=paste(pathR,"/prj_",modelyear-(y-1),".prj",sep=""),overwrite=T)
-
+ }
 
 }
 
 if(species=="NR") {
 if(mcmcon=="YES") {
   shell(paste('"mod3.exe"', '-mceval'))
-  file.copy(from=paste(pathM,"/evalout.prj",sep=""),to=paste(pathR,"/mcmc_",modelyear-(y-1),".std",sep=""),overwrite=T)
+  file.copy(from=paste(pathM,"/evalout.prj",sep=""),to=paste(pathR,"/",species,"_mcmc_",modelyear-(y-1),".std",sep=""),overwrite=T)
 }
 
+### Only write files if not in MCMC mode, because MCMC report files and such are goofy and will screw you up
+
+if(mcmcon=="NO") {
 file.copy(from=paste(pathM,"/mod3.STD",sep=""),to=paste(pathR,"/nr_std_",modelyear-(y-1),".std",sep=""),overwrite=T)
 file.copy(from=paste(pathM,"/report.rep",sep=""),to=paste(pathR,"/nr_rep_",modelyear-(y-1),".rep",sep=""),overwrite=T)
 file.copy(from=paste(pathM,"/mod3.par",sep=""),to=paste(pathR,"/nr_par_",modelyear-(y-1),".par",sep=""),overwrite=T)
 file.copy(from=paste(pathM,"/proj.dat",sep=""),to=paste(pathR,"/nr_prj_",modelyear-(y-1),".prj",sep=""),overwrite=T)
+}
 
-
-}}
+}
+}
 
 T_end<-Sys.time()
 
@@ -245,25 +254,26 @@ if(species=="POP") {
 for(y in 1:length(CTL[1,])) {
   write.table(CTL[,y],file=paste(pathM,"/tem.ctl",sep=""),quote=F,row.names=F,col.names=F)
   shell(paste('tem.exe ','-nox'))
-}
+
 
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 #/\/\/\/\/\/\/\/\ Get/write results
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 
 
-file.copy(from=paste(pathM,"/tem.STD",sep=""),to=paste(pathR,"/std_sens_",y,".std",sep=""),overwrite=T)
-file.copy(from=paste(pathM,"/report.rep",sep=""),to=paste(pathR,"/rep_sens_",y,".rep",sep=""),overwrite=T)
-file.copy(from=paste(pathM,"/tem.par",sep=""),to=paste(pathR,"/par_sens_",y,".par",sep=""),overwrite=T)
-file.copy(from=paste(pathM,"/proj.dat",sep=""),to=paste(pathR,"/par_prj_",y,".prj",sep=""),overwrite=T)
-
-}
+ file.copy(from=paste(pathM,"/tem.STD",sep=""),to=paste(pathR,"/",species,"_std_sens_",y,".std",sep=""),overwrite=T)
+ file.copy(from=paste(pathM,"/report.rep",sep=""),to=paste(pathR,"/",species,"_rep_sens_",y,".rep",sep=""),overwrite=T)
+ file.copy(from=paste(pathM,"/tem.par",sep=""),to=paste(pathR,"/",species,"_par_sens_",y,".par",sep=""),overwrite=T)
+ file.copy(from=paste(pathM,"/proj.dat",sep=""),to=paste(pathR,"/",species,"_par_prj_",y,".prj",sep=""),overwrite=T)
+  
+  
+}}
 
 if(species=="NR") {
   for(y in 1:length(CTL[1,])) {
     write.table(CTL[,y],file=paste(pathM,"/mod3.ctl",sep=""),quote=F,row.names=F,col.names=F)
     shell(paste('mod3.exe ','-nox'))
-  }
+  
   #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
   #/\/\/\/\/\/\/\/\ Get/write results
   #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
@@ -274,7 +284,7 @@ if(species=="NR") {
   file.copy(from=paste(pathM,"/mod3.par",sep=""),to=paste(pathR,"/",species,"_par_sens_",y,".par",sep=""),overwrite=T)
   file.copy(from=paste(pathM,"/proj.dat",sep=""),to=paste(pathR,"/",species,"_par_prj_",y,".prj",sep=""),overwrite=T)
   
-}
+}}
 
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 #/\/\/\/\/\/\/\/\ Plot sensitivity graph
@@ -345,7 +355,7 @@ dev.print(png,file=paste(pathR,"/sensitivity.png",sep=""),width=1024,height=768)
   i<-0
   for (i in modelyear:(modelyear-numretros)) {
    print(i)
-    z<-paste("rep_",i,".rep",sep="")
+    z<-paste(species,"_rep_",i,".rep",sep="")
     f <- readLines(z)
     ssb1<-f[grep("SpBiom",f,value=FALSE)]
     ssb1<-sub("SpBiom  ","",ssb1)
@@ -374,7 +384,7 @@ recdevs<-seq(1,(modelyear-styr+1+nages-2))
 i<-0
 for (i in modelyear:(modelyear-numretros)) {
   print(i)
-  z<-paste("std_",i,".std",sep="")
+  z<-paste(species,"_std_",i,".std",sep="")
   f <- readLines(z)
   g<-trim(f)
   xx<-strsplit(g[grep("log_rec_dev",g,value=FALSE)]," ")
@@ -460,16 +470,19 @@ addpoly <- function(yrvec, lower, upper, shadecol = rgb(0,
 #### Make some color palletes
 colvec <- rainbow(numretros+1, alpha = 0.7)
 shadecolvec <- rainbow(numretros+1, alpha = 0.075)
-# 
+# if case for if all recruitment deviations are negative (northerns) 
+if(-round(max(recdevs[,2:12],na.rm=T)/5,1)*5>0) ylim <-c(round(1.5*min(recdevs[,2:12],na.rm=T)/5,1)*5, 1.5) else
 ylim <-c(- max(recdevs[,2:12],na.rm=T), max(recdevs[,2:12],na.rm=T))
 ylim <- ylim + c(0,0.5*max(recdevs[,2:12],na.rm=T))
 xlim <- c(0, 10)
   xlim <- xlim + c(-0.8, 0.8)
 
 plot(0, type = "n", xlim = xlim, ylim = ylim, ylab = "Recruitment deviation", 
-     xlab = "Years since birth", axes = FALSE,main="Pacific ocean perch recruitment retrospective")
+     xlab = "Years since birth", axes = FALSE,main=paste(species," recruitment retrospective",sep=""))
 
 axis(1, at = 0:10)
+# if case for if all recruitment deviations are negative (northerns) 
+if(-round(max(recdevs[,2:12],na.rm=T)/5,1)*5>0) axis(2, at = (round(1.5*min(recdevs[,2:12],na.rm=T)/5,1)*5):1.5, las = 1) else
 axis(2, at = (-round(max(recdevs[,2:12],na.rm=T)/5,1)*5):(round(max(recdevs[,2:12],na.rm=T)/5,1)*5), las = 1)
 ### rounding and multiplying by 5 is to make axes more general and and have zero centered between intervals
 abline(h = 0, col = "grey")
@@ -499,7 +512,7 @@ dev.print(png,file=paste(pathR,"/squid.png",sep=""),width=1024,height=768)
 #total	225
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 (for i in modelyear:(modelyear-numretros))
-mcmc<-(read.table("mcmc_2011.std",header=F,sep="")) #,nrow=5000,ncol=50+3*(i-styr+1)+nages-recage)
+mcmc<-(read.table(paste(species,"_mcmc_2011.std",sep=""),header=F,sep="")) #,nrow=5000,ncol=50+3*(i-styr+1)+nages-recage)
 mcmc<-mcmc[0.2*mcmcruns:mcmcruns,] # remove burning
 
 ### Identify variables
@@ -523,13 +536,13 @@ mcmclci<-mcmc[1,]
 mcmed<-mcmc[1,]
 mcuci<-mcmc[1,]
 mclci<-mcmc[1,]
-ssbmed<-data.frame(matrix(NA,nrow=11,ncol=51))
-ssblci<-data.frame(matrix(NA,nrow=11,ncol=51))
-ssbuci<-data.frame(matrix(NA,nrow=11,ncol=51))
+ssbmed<-data.frame(matrix(NA,nrow=11,ncol=(modelyear-styr+1)))
+ssblci<-data.frame(matrix(NA,nrow=11,ncol=(modelyear-styr+1)))
+ssbuci<-data.frame(matrix(NA,nrow=11,ncol=(modelyear-styr+1)))
 l<-0
 for (j in modelyear:(modelyear-numretros)) {
 l=l+1
-  mcmc<-(read.table(paste("mcmc_",j,".std",sep=""),header=F,sep="")) #,nrow=5000,ncol=50+3*(i-styr+1)+nages-recage)
+  mcmc<-(read.table(paste(species,"_mcmc_",j,".std",sep=""),header=F,sep="")) #,nrow=5000,ncol=50+3*(i-styr+1)+nages-recage)
   mcmc<-mcmc[1001:5000,] # remove burning
   
   for (i in 1:length(mcmc[1,])) {
@@ -537,12 +550,12 @@ l=l+1
     mcmcmed[i]<-median(mcmc[,i])
     mcmclci[i]<-quantile(mcmc[,i],0.025)
     mcmcuci[i]<-quantile(mcmc[,i],0.975) }
- # mcmed<-rbind(mcmed,mcmcmed)
-#  mcuci<-rbind(mcuci,mcmcuci)
-#  mclci<-rbind(mclci,mcmclci)
-  ssbmed[l,1:(modelyear-styr+1-l+1)]<-mcmcmed[(133-2*(l-1)):(183-2*(l-1)-(l-1))]
-  ssblci[l,1:(modelyear-styr+1-l+1)]<-mcmclci[(133-2*(l-1)):(183-2*(l-1)-(l-1))]
-  ssbuci[l,1:(modelyear-styr+1-l+1)]<-mcmcuci[(133-2*(l-1)):(183-2*(l-1)-(l-1))]
+
+  ssbstart<-8+2*(modelyear-styr+1)+nages-1
+  ssbend<-8+3*(modelyear-styr+1)+nages-1
+  ssbmed[l,1:(modelyear-styr+1-l+1)]<-mcmcmed[(ssbstart-2*(l-1)):(ssbend-2*(l-1)-(l-1))]
+  ssblci[l,1:(modelyear-styr+1-l+1)]<-mcmclci[(ssbstart-2*(l-1)):(ssbend-2*(l-1)-(l-1))]
+  ssbuci[l,1:(modelyear-styr+1-l+1)]<-mcmcuci[(ssbstart-2*(l-1)):(ssbend-2*(l-1)-(l-1))]
 }
 
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
@@ -575,16 +588,18 @@ dev.print(png,file=paste(pathR,"/retrorel.png",sep=""),width=1024,height=768)
 # Plot some posterior/prior plots
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\ 
 
+#/\/\/\/\/\/\/\/\/\/\/\
 ### Plot next year SSB over time
+#/\/\/\/\/\/\/\/\/\/\/\
 themecol<-"black" #"goldenrod" for ppt
 qpr<-rlnorm(40000,log(sapply(ssbmed,mean,na.rm=T)/1000),0.15) ## read values from CTL file
 d <- density(qpr)
-par(bg="transparent",col.axis=themecol,col=themecol,col.main="white",col.lab=themecol)#plot(e, main="Prior and posterior of q",xlim=c(0,5),ylim=c(0,1.1),xlab="Catchability",yaxt="n")
-plot(d, main="Prior and posterior of q",ylim=c(0,max(d$y)*1.7),xlab="Projected female spawning biomass (kt)",yaxt="n",pch="",lty=0)
+par(bg="transparent",col.axis=themecol,col=themecol,col.main="black",col.lab=themecol)#plot(e, main="Prior and posterior of q",xlim=c(0,5),ylim=c(0,1.1),xlab="Catchability",yaxt="n")
+plot(d, main="Posteriors of next year female spawning biomass",ylim=c(0,max(d$y)*1.7),xlab="Projected female spawning biomass (kt)",yaxt="n",pch="",lty=0)
 
 l<-0
 for(i in (modelyear-numretros):modelyear) {
-  mcmc<-(read.table(paste("mcmc_",i,".std",sep=""),header=F,sep="")) #,nrow=5000,ncol=50+3*(i-styr+1)+nages-recage)
+  mcmc<-(read.table(paste(species,"_mcmc_",i,".std",sep=""),header=F,sep="")) #,nrow=5000,ncol=50+3*(i-styr+1)+nages-recage)
   mcmc<-mcmc[1001:5000,] # remove burning
   l<-l+1
   ### Identify variables
@@ -613,16 +628,19 @@ legend("top", lwd = 3, lty = 1, pch = 16, col = rev(colvec),
 
 dev.print(png,file=paste(pathR,"/ssbretro.png",sep=""),width=1024,height=768)
 
-
+#/\/\/\/\/\/\/\/\/\/\/\
 ### Plot catchability over time
+#/\/\/\/\/\/\/\/\/\/\/\
+
 qpr<-rlnorm(40000,log(as.numeric(basectl[26])),as.numeric(basectl[27])) ## read values from CTL file
+e<- density(mcmc$q1) # from last plot, to set maximum y
 d <- density(qpr)
-plot(d, main="Prior and posterior of q",xlim=c(0,0.6*max(d$x)),ylim=c(0,1.4*max(d$y)),xlab="Catchability",yaxt="n",lty=0)
+plot(d, main="Distributions of catchability estimates over time",xlim=c(0,0.6*max(d$x)),ylim=c(0,1.4*max(e$y)),xlab="Catchability",yaxt="n",lty=0)
 
  polygon(d, col="red", border="black",lty=2)
 l<-0
 for(i in (modelyear-numretros):modelyear) {
-  mcmc<-(read.table(paste("mcmc_",i,".std",sep=""),header=F,sep="")) #,nrow=5000,ncol=50+3*(i-styr+1)+nages-recage)
+  mcmc<-(read.table(paste(species,"_mcmc_",i,".std",sep=""),header=F,sep="")) #,nrow=5000,ncol=50+3*(i-styr+1)+nages-recage)
   mcmc<-mcmc[1001:5000,] # remove burning
   l<-l+1
   ### Identify variables
@@ -638,7 +656,7 @@ for(i in (modelyear-numretros):modelyear) {
   names(mcmc)<-mcmcnames
   themecol<-"black" #"goldenrod" for ppt
   
-  par(bg="transparent",col.axis=themecol,col=themecol,col.main="white",col.lab=themecol)
+  par(bg="transparent",col.axis=themecol,col=themecol,col.main="black",col.lab=themecol)
   # Filled Density Plot
   # POP catchability
   basectl<-scan(text=as.character(CTL[3:59,1]))
@@ -658,14 +676,17 @@ legend("top", lwd = 3,  pch = "", col = c("black",rev(colvec)),
 
 dev.print(png,file=paste(pathR,"/qretro.png",sep=""),width=1024,height=768)
 
+#/\/\/\/\/\/\/\/\/\/\/\
 ### Plot projected SSB over time
+#/\/\/\/\/\/\/\/\/\/\/\
+
 qpr<-rlnorm(40000,log(sapply(ssbmed,mean,na.rm=T)/1000),0.12) ## read values from CTL file
 d <- density(qpr)
 plot(d,ylim=c(0,max(d$y)*1.7),xlab="Projected female spawning biomass (kt)",yaxt="n",pch="",lty=0)
 
 l<-0
 j<-modelyear
-mcmc<-(read.table(paste("mcmc_",j,".std",sep=""),header=F,sep="")) #,nrow=5000,ncol=50+3*(i-styr+1)+nages-recage)
+mcmc<-(read.table(paste(species,"_mcmc_",j,".std",sep=""),header=F,sep="")) #,nrow=5000,ncol=50+3*(i-styr+1)+nages-recage)
   mcmc<-mcmc[1001:5000,] # remove burning
   ### Identify variables
   mcmcnames<-  c("sigr","q1",  "q2",  "f40",  "M",	"ssb_next",	"ABC",	"obj_fun")
@@ -679,7 +700,7 @@ mcmc<-(read.table(paste("mcmc_",j,".std",sep=""),header=F,sep="")) #,nrow=5000,n
   mcmcnames<-c(mcmcnames,paste("totbioproj",j+1,sep=""))
   names(mcmc)<-mcmcnames
    # Filled Density Plot
-plot(d, main="Prior and posterior of q",ylim=c(0,max(d$y)*1.7),xlab="Projected female spawning biomass (kt)",yaxt="n",pch="",lty=0)
+plot(d, main="Posterior of projected female spawning biomass",ylim=c(0,max(d$y)*1.7),xlab="Projected female spawning biomass (kt)",yaxt="n",pch="",lty=0)
 l<-1 
  e<- density(mcmc$ssb_next/1000)
   polygon(e, col="yellow",border=colvec[l],lwd=2.5)
@@ -697,15 +718,17 @@ legend("top", lwd = 3, lty = 1, pch = 16, col = colvec,
 
 dev.print(png,file=paste(pathR,"/spproj.png",sep=""),width=1024,height=768)
 
+#/\/\/\/\/\/\/\/\/\/\/\
 ### Plot projected catch over time (at full ABC)
+#/\/\/\/\/\/\/\/\/\/\/\
 
 qpr<-rlnorm(40000,log(mean(mcmc$ABC)/1000),0.15) 
 d <- density(qpr)
-plot(d, main="Prior and posterior of q",ylim=c(0,max(d$y)*1.7),xlab="Projected catch (kt)",yaxt="n",pch="",lty=0)
+plot(d, main="Posterior of projected ABCs",ylim=c(0,max(d$y)*1.7),xlab="Projected catch (kt)",yaxt="n",pch="",lty=0)
 
 l<-1 
 e<- density(mcmc[[paste("catchproj",modelyear+1,sep="")]]/1000) 
-polygon(d, col="yellow",border=colvec[l],lwd=2.5)
+polygon(e, col="yellow",border=colvec[l],lwd=2.5)
 
 for(i in (modelyear+2):(modelyear+6)) {
   print(i)
@@ -721,6 +744,7 @@ dev.print(png,file=paste(pathR,"/catchproj.png",sep=""),width=1024,height=768)
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\ 
 #Plot catchability prior versus posterior
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\ 
+
 colvec2 <- rainbow(numretros+1, alpha = 0.8)
 shadecolvec2 <- rainbow(numretros+1, alpha = 0.3)
 
@@ -728,7 +752,8 @@ shadecolvec2 <- rainbow(numretros+1, alpha = 0.3)
   basectl<-scan(text=as.character(CTL[3:59,1]))
   qpr<-rlnorm(40000,log(as.numeric(basectl[26])),as.numeric(basectl[27])) ## read values from CTL file
   d <- density(qpr)
-  plot(d, main="Prior and posterior of q",xlim=c(0,0.75*max(qpr)),ylim=c(0,max(d$y)*1.4),xlab="Catchability",yaxt="n",lty=0)
+   e<- density(mcmc$q1) # uses last iteration of last plot
+plot(d, main="Prior and posterior of q",xlim=c(0,0.5*max(qpr)),ylim=c(0,max(e$y)*1.4),xlab="Catchability",yaxt="n",lty=0)
   polygon(d, col=shadecolvec2[1], border=colvec2[1],lty=2,lwd=2)
   
   # Filled Density Plot
@@ -746,6 +771,7 @@ dev.print(png,file=paste(pathR,"/qpost.png",sep=""),width=1024,height=768)
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\ 
 # Plot natural mortality prior versus posterior
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\ 
+
 colvec2 <- rainbow(numretros+1, alpha = 0.8)
 shadecolvec2 <- rainbow(numretros+1, alpha = 0.3)
 
@@ -753,7 +779,7 @@ polygon(d, col="red", border="blue")
 basectl<-scan(text=as.character(CTL[3:59,1]))
 mpr<-rlnorm(40000,log(as.numeric(basectl[17])),as.numeric(basectl[18])) ## read values from CTL file
 d <- density(mpr)
-plot(d, main="Prior and posterior of q",xlim=c(0.02,1.2*max(mpr)),ylim=c(0,max(d$y)*1.4),xlab="Catchability",yaxt="n",lty=0)
+plot(d, col="white",main="Prior and posterior of natural mortality",xlim=c(0.02,1.2*max(mpr)),ylim=c(0,max(d$y)*1.4),xlab="Catchability",yaxt="n",lty=0)
 polygon(d, col=shadecolvec2[1], border=colvec2[1],lty=2,lwd=2)
 
 # Filled Density Plot
@@ -772,7 +798,7 @@ dev.print(png,file=paste(pathR,"/mpost.png",sep=""),width=1024,height=768)
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\ 
 
 z<-cbind(mcmc$M,mcmc$q1)
-png(paste(pathR,"/jointqm.png"))
+#png(paste(pathR,"/jointqm.png"))
 HPDregionplot(z,col="green",lwd=3,xlab="Natural mortality",ylab="Catchability",main="Joint posterior distribution")
 points(mcmc$M,mcmc$q1,col="dark blue",pch="*",cex=1)
 dev.print(png,file=paste(pathR,"/jointqm.png",sep=""),width=1024,height=768)
