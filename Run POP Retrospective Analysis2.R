@@ -25,10 +25,11 @@ library(emdbook)
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 #/\/\/\/\/\/\/\/\ Set up directories
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
-setwd("C:/SA/Retro")
+setwd("C:/Retro")
 path<-getwd()
 
-CTL<-read.table(paste(path,"/POPNov2011/models.dat",sep=""),sep="\t")
+species<-"NR"
+
 
 path
 pathD<-paste(path,"/Data",sep="")
@@ -38,8 +39,10 @@ pathR<-paste(path,"/Results",sep="")
 pathM<-paste(path,"/Model",sep="")
 
 # Get current data file
+CTL<-read.table(paste(pathD,"/",species,"_models.dat",sep=""),sep="\t")
 
-DAT<-readLines(paste(pathD,"/goa_pop_2011.dat",sep=""),warn=FALSE)
+
+DAT<-readLines(paste(pathD,"/goa_",species,"_2011.dat",sep=""),warn=FALSE)
 
 Sec_st<-grep("#-",DAT)
 Sec_end<-grep("#!",DAT)
@@ -168,7 +171,7 @@ DAT_retro<-c(DAT_retro,
 DAT_retro<-c(DAT_retro,DAT[st_end[33,1]:st_end[33,2]])
 
 # Write data file
-write.table(DAT_retro,file=paste(pathM,"/goa_pop_2011.dat",sep=""),quote=F,row.names=F,col.names=F)
+write.table(DAT_retro,file=paste(pathM,"/goa_",species,"_2011.dat",sep=""),quote=F,row.names=F,col.names=F)
 
 
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
@@ -177,9 +180,14 @@ write.table(DAT_retro,file=paste(pathM,"/goa_pop_2011.dat",sep=""),quote=F,row.n
 
 ## set your number of MCMC runs at the top of the program... 
 setwd(pathM)
+ if(species=="POP") {
 if(mcmcon=="YES") shell(paste('tem.EXE',' -mcmc ',mcmcruns,'-mcsave ',mcmcsave)) else
-   shell(paste('tem.exe ','-nox'))
-   
+   shell(paste('tem.exe ','-nox')) }
+
+if(species=="NR") {
+  if(mcmcon=="YES") shell(paste('mod3.EXE',' -mcmc ',mcmcruns,'-mcsave ',mcmcsave)) else
+    shell(paste('mod3.exe ','-nox')) }
+
 
 
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
@@ -187,6 +195,7 @@ if(mcmcon=="YES") shell(paste('tem.EXE',' -mcmc ',mcmcruns,'-mcsave ',mcmcsave))
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 
 
+if(species=="POP") {
 if(mcmcon=="YES") {
   shell(paste('"tem.exe"', '-mceval'))
   file.copy(from=paste(pathM,"/evalout.prj",sep=""),to=paste(pathR,"/mcmc_",modelyear-(y-1),".std",sep=""),overwrite=T)
@@ -199,6 +208,20 @@ file.copy(from=paste(pathM,"/proj.dat",sep=""),to=paste(pathR,"/prj_",modelyear-
 
 
 }
+
+if(species=="NR") {
+if(mcmcon=="YES") {
+  shell(paste('"mod3.exe"', '-mceval'))
+  file.copy(from=paste(pathM,"/evalout.prj",sep=""),to=paste(pathR,"/mcmc_",modelyear-(y-1),".std",sep=""),overwrite=T)
+}
+
+file.copy(from=paste(pathM,"/mod3.STD",sep=""),to=paste(pathR,"/nr_std_",modelyear-(y-1),".std",sep=""),overwrite=T)
+file.copy(from=paste(pathM,"/report.rep",sep=""),to=paste(pathR,"/nr_rep_",modelyear-(y-1),".rep",sep=""),overwrite=T)
+file.copy(from=paste(pathM,"/mod3.par",sep=""),to=paste(pathR,"/nr_par_",modelyear-(y-1),".par",sep=""),overwrite=T)
+file.copy(from=paste(pathM,"/proj.dat",sep=""),to=paste(pathR,"/nr_prj_",modelyear-(y-1),".prj",sep=""),overwrite=T)
+
+
+}}
 
 T_end<-Sys.time()
 
@@ -213,14 +236,16 @@ T_end-T_start
 
 setwd(pathM)
 #write.table(DAT,file=paste(pathM,"/goa_pop_2011.dat",sep=""),,quote=F,,,,,row.names=F,col.names=F)
-write.table(DAT,file=paste(pathM,"/goa_pop_2011.dat",sep=""),quote=F,row.names=F,col.names=F)
+write.table(DAT,file=paste(pathM,"/goa_",species,"_2011.dat",sep=""),quote=F,row.names=F,col.names=F)
 
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 # Run sensitivity runs
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+if(species=="POP") {
 for(y in 1:length(CTL[1,])) {
   write.table(CTL[,y],file=paste(pathM,"/tem.ctl",sep=""),quote=F,row.names=F,col.names=F)
   shell(paste('tem.exe ','-nox'))
+}
 
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 #/\/\/\/\/\/\/\/\ Get/write results
@@ -233,6 +258,24 @@ file.copy(from=paste(pathM,"/tem.par",sep=""),to=paste(pathR,"/par_sens_",y,".pa
 file.copy(from=paste(pathM,"/proj.dat",sep=""),to=paste(pathR,"/par_prj_",y,".prj",sep=""),overwrite=T)
 
 }
+
+if(species=="NR") {
+  for(y in 1:length(CTL[1,])) {
+    write.table(CTL[,y],file=paste(pathM,"/mod3.ctl",sep=""),quote=F,row.names=F,col.names=F)
+    shell(paste('mod3.exe ','-nox'))
+  }
+  #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+  #/\/\/\/\/\/\/\/\ Get/write results
+  #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
+  
+  
+  file.copy(from=paste(pathM,"/mod3.STD",sep=""),to=paste(pathR,"/",species,"_std_sens_",y,".std",sep=""),overwrite=T)
+  file.copy(from=paste(pathM,"/report.rep",sep=""),to=paste(pathR,"/",species,"_rep_sens_",y,".rep",sep=""),overwrite=T)
+  file.copy(from=paste(pathM,"/mod3.par",sep=""),to=paste(pathR,"/",species,"_par_sens_",y,".par",sep=""),overwrite=T)
+  file.copy(from=paste(pathM,"/proj.dat",sep=""),to=paste(pathR,"/",species,"_par_prj_",y,".prj",sep=""),overwrite=T)
+  
+}
+
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 #/\/\/\/\/\/\/\/\ Plot sensitivity graph
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
@@ -271,7 +314,7 @@ filesearch <- function (x,y) {
 
 #location of data files
 setwd(pathR)
-y<-filesearch("rep_sens_",21)
+y<-filesearch(paste(species,"_rep_sens_",sep=""),21)
 #sensplot<-function(x) {
 y<-data.frame(y,stringsAsFactors = FALSE)
 for(j in 3:7) {
